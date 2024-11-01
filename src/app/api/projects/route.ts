@@ -26,6 +26,16 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   const currentProject = projects[currentIndex];
 
+  // Create the image URL with proper encoding
+  const imageUrl = new URL(`${NEXT_PUBLIC_URL}/api/og`);
+  imageUrl.searchParams.append('project', currentProject.name);
+  imageUrl.searchParams.append('description', currentProject.description);
+  imageUrl.searchParams.append('index', (currentIndex + 1).toString());
+  imageUrl.searchParams.append('total', projects.length.toString());
+
+  // Log the generated URL for debugging
+  console.log('Generated image URL:', imageUrl.toString());
+
   return new NextResponse(
     getFrameHtmlResponse({
       buttons: [
@@ -43,7 +53,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
           target: currentProject.link,
         },
       ],
-      image: `${NEXT_PUBLIC_URL}/buildathon-og.png`,
+      image: imageUrl.toString(),
       post_url: `${NEXT_PUBLIC_URL}/api/projects`,
       state: { index: currentIndex },
     })
