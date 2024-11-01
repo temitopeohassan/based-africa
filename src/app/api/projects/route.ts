@@ -28,14 +28,16 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     let currentIndex = state.index;
     console.log('Current state before navigation:', { buttonIndex, currentIndex, totalProjects: projects.length });
 
-    // Handle navigation based on button press
-    if (buttonIndex === 1) { // Next button
+    // Updated button index logic
+    if (!buttonIndex || buttonIndex === 3) { // Initial state or View Project button
+      currentIndex = currentIndex;
+    } else if (buttonIndex === 2) { // Next button
       currentIndex = (currentIndex + 1) % projects.length;
-    } else if (buttonIndex === 0) { // Previous button
+    } else if (buttonIndex === 1) { // Previous button
       currentIndex = currentIndex === 0 ? projects.length - 1 : currentIndex - 1;
     }
 
-    console.log('State after navigation:', { currentIndex });
+    console.log('State after navigation:', { currentIndex, buttonPressed: buttonIndex });
 
     const currentProject = projects[currentIndex];
     if (!currentProject) {
