@@ -27,12 +27,14 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     let currentIndex = state.index;
     console.log('Current state before navigation:', { buttonIndex, currentIndex, totalProjects: projects.length });
-    
-    // If it's the initial state or Next is clicked, move to next project
-    if (currentIndex === -1 || buttonIndex === 2) {
-      currentIndex = Math.min(projects.length - 1, currentIndex + 1);
-    } else if (buttonIndex === 1) { // Previous
-      currentIndex = Math.max(0, currentIndex - 1);
+
+    // Update index based on button click
+    if (buttonIndex === 2) { // Next button
+      currentIndex = (currentIndex + 1) % projects.length;
+    } else if (buttonIndex === 1) { // Previous button
+      currentIndex = (currentIndex - 1 + projects.length) % projects.length;
+    } else if (currentIndex === -1) {
+      currentIndex = 0; // Initialize to first project if index is -1
     }
 
     console.log('State after navigation:', { currentIndex, buttonPressed: buttonIndex });
@@ -62,7 +64,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         ],
         image: `${NEXT_PUBLIC_URL}/api/og?project=${encodeURIComponent(currentProject.name)}&description=${encodeURIComponent(currentProject.description)}&index=${currentIndex + 1}&total=${projects.length}`,
         post_url: `${NEXT_PUBLIC_URL}/api/projects`,
-        state: { index: currentIndex },
+        state: { index: currentIndex }, // Pass updated index state
       })
     );
   } catch (error) {
