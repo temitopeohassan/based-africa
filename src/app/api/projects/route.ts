@@ -19,25 +19,23 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     const buttonIndex = untrustedData?.buttonIndex || 0;
     let state;
     try {
-      state = untrustedData?.state ? JSON.parse(untrustedData.state) : { index: -1 };
+      state = untrustedData?.state ? JSON.parse(untrustedData.state) : { index: 0 };
     } catch (error) {
       console.error('Error parsing state:', error);
-      state = { index: -1 };
+      state = { index: 0 };
     }
 
     let currentIndex = state.index;
+    console.log('Initial state:', { buttonIndex, currentIndex, totalProjects: projects.length });
     
-    // Log current state
-    console.log('Current state:', { buttonIndex, currentIndex, projectsLength: projects.length });
-
-    if (currentIndex === -1 || buttonIndex === 1) {
-      currentIndex = Math.min(projects.length - 1, currentIndex + 1);
-    } else if (buttonIndex === 0) {
-      currentIndex = Math.max(0, currentIndex - 1);
+    // Update navigation logic
+    if (buttonIndex === 1) { // Next button
+      currentIndex = (currentIndex + 1) % projects.length;
+    } else if (buttonIndex === 0) { // Previous button
+      currentIndex = currentIndex === 0 ? projects.length - 1 : currentIndex - 1;
     }
-
-    // Ensure currentIndex is within bounds
-    currentIndex = Math.max(0, Math.min(projects.length - 1, currentIndex));
+    
+    console.log('After navigation:', { currentIndex });
 
     const currentProject = projects[currentIndex];
     if (!currentProject) {
@@ -45,38 +43,30 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       return new NextResponse('Project not found', { status: 500 });
     }
 
-    const imageUrl = new URL(`${NEXT_PUBLIC_URL}/api/og`);
-    imageUrl.searchParams.append('project', currentProject.name);
-    imageUrl.searchParams.append('description', currentProject.description);
-    imageUrl.searchParams.append('index', (currentIndex + 1).toString());
-    imageUrl.searchParams.append('total', projects.length.toString());
-
-    console.log('Generated image URL:', imageUrl.toString());
-
-    const frameResponse = getFrameHtmlResponse({
-      buttons: [
-        {
-          label: 'Previous',
-          action: 'post',
-        },
-        {
-          label: 'Next',
-          action: 'post',
-        },
-        {
-          label: 'View Project',
-          action: 'link',
-          target: currentProject.link,
-        },
-      ],
-      image: imageUrl.toString(),
-      post_url: `${NEXT_PUBLIC_URL}/api/projects`,
-      state: { index: currentIndex },
-    });
-
-    return new NextResponse(frameResponse);
+    return new NextResponse(
+      getFrameHtmlResponse({
+        buttons: [
+          {
+            label: 'Previous',
+            action: 'post',
+          },
+          {
+            label: 'Next',
+            action: 'post',
+          },
+          {
+            label: 'View Project',
+            action: 'link',
+            target: currentProject.link,
+          },
+        ],
+        image: `${NEXT_PUBLIC_URL}/api/og?project=${encodeURIComponent(currentProject.name)}&description=${encodeURIComponent(currentProject.description)}&index=${currentIndex + 1}&total=${projects.length}`,
+        post_url: `${NEXT_PUBLIC_URL}/api/projects`,
+        state: { index: currentIndex },
+      })
+    );
   } catch (error) {
-    console.error('Unexpected error in projects route:', error);
+    console.error('Unexpected error:', error);
     return new NextResponse('Internal server error', { status: 500 });
   }
 }
