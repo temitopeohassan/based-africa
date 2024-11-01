@@ -17,24 +17,24 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     console.log('Received untrustedData:', untrustedData);
 
     const buttonIndex = untrustedData?.buttonIndex || 0;
-    let state;
+    let currentIndex;
+    
     try {
-      state = untrustedData?.state ? JSON.parse(untrustedData.state) : { index: -1 };
+      // Parse the state if it exists, otherwise start at index 0
+      const state = untrustedData?.state ? JSON.parse(untrustedData.state) : { index: 0 };
+      currentIndex = state.index;
     } catch (error) {
       console.error('Error parsing state:', error);
-      state = { index: -1 };
+      currentIndex = 0;
     }
 
-    let currentIndex = state.index;
     console.log('Current state before navigation:', { buttonIndex, currentIndex, totalProjects: projects.length });
-
-    // Update index based on button click
-    if (buttonIndex === 2) { // Next button
-      currentIndex = (currentIndex + 1) % projects.length;
-    } else if (buttonIndex === 1) { // Previous button
-      currentIndex = (currentIndex - 1 + projects.length) % projects.length;
-    } else if (currentIndex === -1) {
-      currentIndex = 0; // Initialize to first project if index is -1
+    
+    // Handle navigation based on button press
+    if (buttonIndex === 1) { // Previous button
+      currentIndex = currentIndex <= 0 ? projects.length - 1 : currentIndex - 1;
+    } else if (buttonIndex === 2) { // Next button
+      currentIndex = currentIndex >= projects.length - 1 ? 0 : currentIndex + 1;
     }
 
     console.log('State after navigation:', { currentIndex, buttonPressed: buttonIndex });
@@ -64,7 +64,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         ],
         image: `${NEXT_PUBLIC_URL}/api/og?project=${encodeURIComponent(currentProject.name)}&description=${encodeURIComponent(currentProject.description)}&index=${currentIndex + 1}&total=${projects.length}`,
         post_url: `${NEXT_PUBLIC_URL}/api/projects`,
-        state: { index: currentIndex }, // Pass updated index state
+        state: { index: currentIndex },
       })
     );
   } catch (error) {
