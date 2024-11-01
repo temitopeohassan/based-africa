@@ -16,25 +16,23 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     const { untrustedData } = body;
     console.log('Received untrustedData:', untrustedData);
 
-    const buttonIndex = untrustedData?.buttonIndex;
+    const buttonIndex = untrustedData?.buttonIndex || 0;
     let state;
     try {
-      state = untrustedData?.state ? JSON.parse(untrustedData.state) : { index: 0 };
+      state = untrustedData?.state ? JSON.parse(untrustedData.state) : { index: -1 };
     } catch (error) {
       console.error('Error parsing state:', error);
-      state = { index: 0 };
+      state = { index: -1 };
     }
 
     let currentIndex = state.index;
     console.log('Current state before navigation:', { buttonIndex, currentIndex, totalProjects: projects.length });
-
-    // Updated button index logic
-    if (!buttonIndex || buttonIndex === 3) { // Initial state or View Project button
-      currentIndex = currentIndex;
-    } else if (buttonIndex === 2) { // Next button
-      currentIndex = (currentIndex + 1) % projects.length;
-    } else if (buttonIndex === 1) { // Previous button
-      currentIndex = currentIndex === 0 ? projects.length - 1 : currentIndex - 1;
+    
+    // If it's the initial state or Next is clicked, move to next project
+    if (currentIndex === -1 || buttonIndex === 2) {
+      currentIndex = Math.min(projects.length - 1, currentIndex + 1);
+    } else if (buttonIndex === 1) { // Previous
+      currentIndex = Math.max(0, currentIndex - 1);
     }
 
     console.log('State after navigation:', { currentIndex, buttonPressed: buttonIndex });
