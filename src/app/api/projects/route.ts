@@ -43,7 +43,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
           target: currentProject.link,
         },
       ],
-      image: `${NEXT_PUBLIC_URL}/api/og?project=${encodeURIComponent(currentProject.name)}&description=${encodeURIComponent(currentProject.description)}&index=${currentIndex + 1}&total=${projects.length}`,
+      image: `${NEXT_PUBLIC_URL}/buildathon-og.png`,
       post_url: `${NEXT_PUBLIC_URL}/api/projects`,
       state: { index: currentIndex },
     })
