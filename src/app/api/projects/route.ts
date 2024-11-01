@@ -17,14 +17,26 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   let currentIndex = state.index;
   
-  // If it's the initial state or Next is clicked, move to next project
-  if (currentIndex === -1 || buttonIndex === 2) {
+  // Fix button index logic - buttons are 0-based indexed
+  if (currentIndex === -1 || buttonIndex === 1) { // Next button (index 1)
     currentIndex = Math.min(projects.length - 1, currentIndex + 1);
-  } else if (buttonIndex === 1) { // Previous
+  } else if (buttonIndex === 0) { // Previous button (index 0)
     currentIndex = Math.max(0, currentIndex - 1);
   }
 
+  // Add error handling for project access
+  if (currentIndex < 0 || currentIndex >= projects.length) {
+    console.error('Invalid project index:', currentIndex);
+    currentIndex = 0; // Reset to first project if invalid
+  }
+
   const currentProject = projects[currentIndex];
+
+  // Add null check for currentProject
+  if (!currentProject) {
+    console.error('Project not found for index:', currentIndex);
+    return new NextResponse('Project not found', { status: 500 });
+  }
 
   // Create the image URL with proper encoding
   const imageUrl = new URL(`${NEXT_PUBLIC_URL}/api/og`);
