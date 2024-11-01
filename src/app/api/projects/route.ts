@@ -16,7 +16,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     const { untrustedData } = body;
     console.log('Received untrustedData:', untrustedData);
 
-    const buttonIndex = untrustedData?.buttonIndex || 0;
+    const buttonIndex = untrustedData?.buttonIndex;
     let state;
     try {
       state = untrustedData?.state ? JSON.parse(untrustedData.state) : { index: 0 };
@@ -26,16 +26,16 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     }
 
     let currentIndex = state.index;
-    console.log('Initial state:', { buttonIndex, currentIndex, totalProjects: projects.length });
-    
-    // Update navigation logic
+    console.log('Current state before navigation:', { buttonIndex, currentIndex, totalProjects: projects.length });
+
+    // Handle navigation based on button press
     if (buttonIndex === 1) { // Next button
       currentIndex = (currentIndex + 1) % projects.length;
     } else if (buttonIndex === 0) { // Previous button
       currentIndex = currentIndex === 0 ? projects.length - 1 : currentIndex - 1;
     }
-    
-    console.log('After navigation:', { currentIndex });
+
+    console.log('State after navigation:', { currentIndex });
 
     const currentProject = projects[currentIndex];
     if (!currentProject) {
