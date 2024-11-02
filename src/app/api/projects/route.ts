@@ -14,32 +14,53 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     }
 
     const { untrustedData } = body;
-    console.log('Received untrustedData:', untrustedData);
+    console.log('📥 Received request data:', {
+      untrustedData,
+      buttonIndex: untrustedData?.buttonIndex,
+      state: untrustedData?.state
+    });
 
     const buttonIndex = untrustedData?.buttonIndex || 0;
     let state;
     try {
       state = untrustedData?.state ? JSON.parse(untrustedData.state) : { index: -1 };
+      console.log('📋 Parsed state:', state);
     } catch (error) {
-      console.error('Error parsing state:', error);
+      console.error('❌ Error parsing state:', error);
       state = { index: -1 };
     }
 
     let currentIndex = state.index;
-    console.log('Current state before navigation:', { buttonIndex, currentIndex, totalProjects: projects.length });
+    console.log('🎯 Navigation start:', {
+      buttonIndex,
+      currentIndex,
+      totalProjects: projects.length,
+      condition1: currentIndex === -1,
+      condition2: buttonIndex === 2,
+      willIncrement: currentIndex === -1 || buttonIndex === 2,
+      willDecrement: buttonIndex === 1
+    });
     
     // Using the original navigation logic that works correctly
     if (currentIndex === -1 || buttonIndex === 2) {
+      const oldIndex = currentIndex;
       currentIndex = Math.min(projects.length - 1, currentIndex + 1);
+      console.log('➡️ Moving forward:', { oldIndex, newIndex: currentIndex });
     } else if (buttonIndex === 1) {
+      const oldIndex = currentIndex;
       currentIndex = Math.max(0, currentIndex - 1);
+      console.log('⬅️ Moving backward:', { oldIndex, newIndex: currentIndex });
     }
 
-    console.log('State after navigation:', { currentIndex, buttonPressed: buttonIndex });
+    console.log('🔄 Navigation complete:', {
+      finalIndex: currentIndex,
+      buttonPressed: buttonIndex,
+      projectName: projects[currentIndex]?.name
+    });
 
     const currentProject = projects[currentIndex];
     if (!currentProject) {
-      console.error('Project not found for index:', currentIndex);
+      console.error('❌ Project not found:', { currentIndex, totalProjects: projects.length });
       return new NextResponse('Project not found', { status: 500 });
     }
 
