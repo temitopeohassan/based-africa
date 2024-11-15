@@ -8,21 +8,8 @@ export const revalidate = 0;
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
-    let body;
-    try {
-      body = await req.json();
-    } catch (error) {
-      console.error('Error parsing request body:', error);
-      return new NextResponse('Invalid request body', { status: 400 });
-    }
-
+    const body = await req.json();
     const { untrustedData } = body;
-    console.log('📥 Received request data:', {
-      untrustedData,
-      buttonIndex: untrustedData?.buttonIndex,
-      state: untrustedData?.state
-    });
-
     const buttonIndex = untrustedData?.buttonIndex || 0;
 
     // If Home button is clicked (button index 4)
@@ -33,15 +20,16 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
             {
               label: 'View Projects',
               action: 'post',
+              postUrl: `${NEXT_PUBLIC_URL}/api/projects`,
             },
             {
               label: 'View Winners',
               action: 'post',
+              postUrl: `${NEXT_PUBLIC_URL}/api/winners`,
             },
           ],
           image: `${NEXT_PUBLIC_URL}/buildathon.png`,
-          post_url: `${NEXT_PUBLIC_URL}/api/og?region=all`,
-          state: { index: -1 },
+          post_url: `${NEXT_PUBLIC_URL}/api/projects`,
         })
       );
     }
@@ -49,25 +37,23 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     let state;
     try {
       state = untrustedData?.state ? JSON.parse(untrustedData.state) : { index: -1 };
-      console.log('📋 Parsed state:', state);
     } catch (error) {
-      console.error('❌ Error parsing state:', error);
       state = { index: -1 };
     }
 
     let currentIndex = state.index;
     
-    if (currentIndex === -1 || buttonIndex === 2) {
+    // Modified navigation logic
+    if (buttonIndex === 2) { // Next
       currentIndex = Math.min(projects.length - 1, currentIndex + 1);
-    } else if (buttonIndex === 1) {
+    } else if (buttonIndex === 1) { // Previous
       currentIndex = Math.max(0, currentIndex - 1);
+    } else if (currentIndex === -1) { // Initial state
+      currentIndex = 0;
     }
-
-    console.log('📍 Navigation:', { currentIndex, totalProjects: projects.length });
 
     const currentProject = projects[currentIndex];
     if (!currentProject) {
-      console.error('❌ Project not found:', { currentIndex, totalProjects: projects.length });
       return new NextResponse('Project not found', { status: 500 });
     }
 
@@ -98,11 +84,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       })
     );
 
-    // Add cache control headers
     response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     response.headers.set('Pragma', 'no-cache');
     response.headers.set('Expires', '0');
-    response.headers.set('Surrogate-Control', 'no-store');
 
     return response;
   } catch (error) {
