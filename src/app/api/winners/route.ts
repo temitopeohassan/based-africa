@@ -89,7 +89,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
             action: 'post',
           },
         ],
-        image: `${NEXT_PUBLIC_URL}${currentProject.image}`,
+        image: `${NEXT_PUBLIC_URL}/${currentProject.image}`,
         post_url: `${NEXT_PUBLIC_URL}/api/winners`,
         state: { index: currentIndex },
       })

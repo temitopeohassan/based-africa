@@ -15,7 +15,10 @@ export const metadata: Metadata = {
     'fc:frame:image': `${NEXT_PUBLIC_URL}/buildathon.png`,
     'fc:frame:button:1': 'View Projects',
     'fc:frame:button:1:action': 'post',
-    'fc:frame:post_url': `${NEXT_PUBLIC_URL}/api/projects`,
+    'fc:frame:button:1:post_url': `${NEXT_PUBLIC_URL}/api/projects`,
+    'fc:frame:button:2': 'View Winners',
+    'fc:frame:button:2:action': 'post',
+    'fc:frame:button:2:post_url': `${NEXT_PUBLIC_URL}/api/winners`,
   },
 };
 
