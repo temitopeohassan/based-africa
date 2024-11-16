@@ -3,6 +3,15 @@ import { getFrameHtmlResponse } from '@coinbase/onchainkit/frame';
 import { NEXT_PUBLIC_URL } from '../../config';
 import projects from '../../projects.json';
 
+// Define the type for your project structure
+interface Project {
+  image: string;
+  name: string;
+  link: string;
+  description: string;
+  author: string;
+}
+
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
@@ -37,47 +46,49 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     // Parse state with better error handling and logging
     let currentIndex = 0;
     try {
-      const stateData = untrustedData?.state ? JSON.parse(untrustedData.state) : { index: 0 };
-      currentIndex = stateData.index;
-      console.log('Current index from state:', currentIndex);
+      if (untrustedData?.state) {
+        const stateData = JSON.parse(untrustedData.state);
+        currentIndex = typeof stateData.index === 'number' ? stateData.index : 0;
+      }
+      console.log('Initial index from state:', currentIndex);
     } catch (error) {
       console.error('Error parsing state:', error);
       currentIndex = 0;
     }
 
-    // Handle navigation with logging
+    // Handle navigation with circular iteration
     if (buttonIndex === 2) { // Next
-      currentIndex = Math.min(projects.length - 1, currentIndex + 1);
+      currentIndex = (currentIndex + 1) % projects.length;
       console.log('Next clicked. New index:', currentIndex);
     } else if (buttonIndex === 1) { // Previous
-      currentIndex = Math.max(0, currentIndex - 1);
+      currentIndex = (currentIndex - 1 + projects.length) % projects.length;
       console.log('Previous clicked. New index:', currentIndex);
     }
 
-    // Validate current index
-    if (currentIndex < 0 || currentIndex >= projects.length) {
-      console.error('Invalid index:', currentIndex);
-      currentIndex = 0;
-    }
+    console.log('Current index:', currentIndex, 'Total projects:', projects.length);
 
-    const currentProject = projects[currentIndex];
+    const currentProject = projects[currentIndex] as Project;
     if (!currentProject) {
       console.error('Project not found for index:', currentIndex);
       return new NextResponse('Project not found', { status: 500 });
     }
 
-    // Log the state being set
-    console.log('Setting state with index:', currentIndex);
+    // Log the current project for debugging using the correct property name
+    console.log('Current project:', {
+      index: currentIndex,
+      name: currentProject.name,
+      image: currentProject.image
+    });
 
     const response = new NextResponse(
       getFrameHtmlResponse({
         buttons: [
           {
-            label: 'Previous',
+            label: `Previous (${currentIndex + 1}/${projects.length})`,
             action: 'post',
           },
           {
-            label: 'Next',
+            label: `Next (${currentIndex + 1}/${projects.length})`,
             action: 'post',
           },
           {
@@ -92,7 +103,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         ],
         image: `${NEXT_PUBLIC_URL}/${currentProject.image}`,
         post_url: `${NEXT_PUBLIC_URL}/api/projects`,
-        state: { index: currentIndex }, // Pass the state as an object, not a string
+        state: { index: currentIndex },
       })
     );
 
