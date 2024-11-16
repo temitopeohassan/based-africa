@@ -3,14 +3,6 @@ import { getFrameHtmlResponse } from '@coinbase/onchainkit/frame';
 import { NEXT_PUBLIC_URL } from '../../config';
 import projects from '../../projects.json';
 
-interface Project {
-  image: string;
-  name: string;
-  link: string;
-  description: string;
-  author: string;
-}
-
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
