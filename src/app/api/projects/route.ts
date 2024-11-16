@@ -3,7 +3,6 @@ import { getFrameHtmlResponse } from '@coinbase/onchainkit/frame';
 import { NEXT_PUBLIC_URL } from '../../config';
 import projects from '../../projects.json';
 
-// Define the type for your project structure
 interface Project {
   image: string;
   name: string;
@@ -20,6 +19,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     const body = await req.json();
     const { untrustedData } = body;
     const buttonIndex = untrustedData?.buttonIndex || 0;
+
+    // Check if this is the initial load (no button pressed)
+    const isInitialLoad = !buttonIndex;
 
     // If Home button is clicked (button index 4)
     if (buttonIndex === 4) {
@@ -44,13 +46,13 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     }
 
     // Parse state with better error handling and logging
-    let currentIndex = 0;
+    let currentIndex = 0; // Default to first record
     try {
-      if (untrustedData?.state) {
+      if (!isInitialLoad && untrustedData?.state) {
         const stateData = JSON.parse(untrustedData.state);
         currentIndex = typeof stateData.index === 'number' ? stateData.index : 0;
       }
-      console.log('Initial index from state:', currentIndex);
+      console.log('Initial index from state:', currentIndex, 'Initial load:', isInitialLoad);
     } catch (error) {
       console.error('Error parsing state:', error);
       currentIndex = 0;
@@ -65,6 +67,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       console.log('Previous clicked. New index:', currentIndex);
     }
 
+    // Ensure index is within bounds
+    currentIndex = Math.max(0, Math.min(currentIndex, projects.length - 1));
+
     console.log('Current index:', currentIndex, 'Total projects:', projects.length);
 
     const currentProject = projects[currentIndex] as Project;
@@ -73,11 +78,15 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       return new NextResponse('Project not found', { status: 500 });
     }
 
-    // Log the current project for debugging using the correct property name
+    // Construct the full image URL
+    const imageUrl = `${NEXT_PUBLIC_URL}/${currentProject.image}`;
+    console.log('Loading image:', imageUrl);
+
+    // Log the current project for debugging
     console.log('Current project:', {
       index: currentIndex,
       name: currentProject.name,
-      image: currentProject.image
+      image: imageUrl
     });
 
     const response = new NextResponse(
@@ -101,7 +110,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
             action: 'post',
           },
         ],
-        image: `${NEXT_PUBLIC_URL}/${currentProject.image}`,
+        image: imageUrl,
         post_url: `${NEXT_PUBLIC_URL}/api/projects`,
         state: { index: currentIndex },
       })

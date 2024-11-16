@@ -1,7 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getFrameHtmlResponse } from '@coinbase/onchainkit/frame';
 import { NEXT_PUBLIC_URL } from '../../config';
-import projects from '../../winners.json';
+import winners from '../../winners.json';
+
+interface Winner {
+  image: string;
+  name: string;
+  link: string;
+  description: string;
+  author: string;
+}
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -11,6 +19,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     const body = await req.json();
     const { untrustedData } = body;
     const buttonIndex = untrustedData?.buttonIndex || 0;
+
+    // Check if this is the initial load (no button pressed)
+    const isInitialLoad = !buttonIndex;
 
     // If Home button is clicked (button index 4)
     if (buttonIndex === 4) {
@@ -35,49 +46,58 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     }
 
     // Parse state with better error handling and logging
-    let currentIndex = 0;
+    let currentIndex = 0; // Default to first record
     try {
-      const stateData = untrustedData?.state ? JSON.parse(untrustedData.state) : { index: 0 };
-      currentIndex = stateData.index;
-      console.log('Current index from state:', currentIndex);
+      if (!isInitialLoad && untrustedData?.state) {
+        const stateData = JSON.parse(untrustedData.state);
+        currentIndex = typeof stateData.index === 'number' ? stateData.index : 0;
+      }
+      console.log('Initial index from state:', currentIndex, 'Initial load:', isInitialLoad);
     } catch (error) {
       console.error('Error parsing state:', error);
       currentIndex = 0;
     }
 
-    // Handle navigation with logging
+    // Handle navigation with circular iteration
     if (buttonIndex === 2) { // Next
-      currentIndex = Math.min(projects.length - 1, currentIndex + 1);
+      currentIndex = (currentIndex + 1) % winners.length;
       console.log('Next clicked. New index:', currentIndex);
     } else if (buttonIndex === 1) { // Previous
-      currentIndex = Math.max(0, currentIndex - 1);
+      currentIndex = (currentIndex - 1 + winners.length) % winners.length;
       console.log('Previous clicked. New index:', currentIndex);
     }
 
-    // Validate current index
-    if (currentIndex < 0 || currentIndex >= projects.length) {
-      console.error('Invalid index:', currentIndex);
-      currentIndex = 0;
-    }
+    // Ensure index is within bounds
+    currentIndex = Math.max(0, Math.min(currentIndex, winners.length - 1));
 
-    const currentProject = projects[currentIndex];
+    console.log('Current index:', currentIndex, 'Total projects:', winners.length);
+
+    const currentProject = winners[currentIndex] as Winner;
     if (!currentProject) {
       console.error('Project not found for index:', currentIndex);
       return new NextResponse('Project not found', { status: 500 });
     }
 
-    // Log the state being set
-    console.log('Setting state with index:', currentIndex);
+    // Construct the full image URL
+    const imageUrl = `${NEXT_PUBLIC_URL}/${currentProject.image}`;
+    console.log('Loading image:', imageUrl);
+
+    // Log the current project for debugging
+    console.log('Current project:', {
+      index: currentIndex,
+      name: currentProject.name,
+      image: imageUrl
+    });
 
     const response = new NextResponse(
       getFrameHtmlResponse({
         buttons: [
           {
-            label: 'Previous',
+            label: `Previous (${currentIndex + 1}/${winners.length})`,
             action: 'post',
           },
           {
-            label: 'Next',
+            label: `Next (${currentIndex + 1}/${winners.length})`,
             action: 'post',
           },
           {
@@ -90,9 +110,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
             action: 'post',
           },
         ],
-        image: `${NEXT_PUBLIC_URL}/${currentProject.image}`,
+        image: imageUrl,
         post_url: `${NEXT_PUBLIC_URL}/api/winners`,
-        state: { index: currentIndex }, // Pass the state as an object, not a string
+        state: { index: currentIndex },
       })
     );
 
