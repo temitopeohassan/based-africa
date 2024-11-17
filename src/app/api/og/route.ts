@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import sharp from 'sharp';
+import { createCanvas, loadImage } from 'canvas';
 import path from 'path';
 import fs from 'fs';
 
@@ -18,63 +18,26 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   const fontPath = path.join(process.cwd(), 'public', 'fonts', 'Arial.ttf');
 
   try {
-    if (!fs.existsSync(imagePath)) {
-      console.error('Background image not found:', imagePath);
-      throw new Error('Background image not found');
+    if (!fs.existsSync(imagePath) || !fs.existsSync(fontPath)) {
+      throw new Error('Required files not found');
     }
 
-    if (!fs.existsSync(fontPath)) {
-      console.error('Font file not found:', fontPath);
-      throw new Error('Font file not found');
+    const canvas = createCanvas(1200, 630);
+    const ctx = canvas.getContext('2d');
+
+    const background = await loadImage(imagePath);
+    ctx.drawImage(background, 0, 0, 1200, 630);
+
+    ctx.font = '50px Arial';
+    ctx.fillStyle = 'black';
+    ctx.fillText(`Project ${index}/${total}`, 100, 150);
+    ctx.fillText(decodeURIComponent(project).toUpperCase(), 100, 200);
+    if (description) {
+      ctx.fillText(decodeURIComponent(description), 100, 350);
     }
 
-    const image = await sharp(imagePath)
-      .resize(1200, 630)
-      .composite([
-        {
-          input: {
-            text: {
-              text: `Project ${index}/${total}`,
-              font: fontPath,
-              width: 400,
-              height: 50,
-              rgba: true,
-            },
-          },
-          top: 150,
-          left: 100,
-        },
-        {
-          input: {
-            text: {
-              text: decodeURIComponent(project).toUpperCase(),
-              font: fontPath,
-              width: 1000,
-              height: 150,
-              rgba: true,
-            },
-          },
-          top: 200,
-          left: 100,
-        },
-        {
-          input: {
-            text: {
-              text: description ? decodeURIComponent(description) : '',
-              font: fontPath,
-              width: 800,
-              height: 100,
-              rgba: true,
-            },
-          },
-          top: 350,
-          left: 100,
-        },
-      ])
-      .png()
-      .toBuffer();
-
-    return new NextResponse(image, {
+    const buffer = canvas.toBuffer('image/png');
+    return new NextResponse(buffer, {
       status: 200,
       headers: {
         'Content-Type': 'image/png',
